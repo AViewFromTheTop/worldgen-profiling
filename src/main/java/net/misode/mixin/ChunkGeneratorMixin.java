@@ -1,5 +1,6 @@
 package net.misode.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.List;
 import java.util.Map;
@@ -35,49 +36,32 @@ public abstract class ChunkGeneratorMixin {
 	@Inject(
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/world/gen/feature/PlacedFeature;generate(Lnet/minecraft/world/StructureWorldAccess;Lnet/minecraft/world/gen/chunk/ChunkGenerator;Lnet/minecraft/util/math/random/Random;Lnet/minecraft/util/math/BlockPos;)Z"
+			target = "Lnet/minecraft/world/gen/feature/PlacedFeature;generate(Lnet/minecraft/world/StructureWorldAccess;Lnet/minecraft/world/gen/chunk/ChunkGenerator;Lnet/minecraft/util/math/random/Random;Lnet/minecraft/util/math/BlockPos;)Z",
+			shift = At.Shift.BEFORE
 		),
-		method = "generateFeatures",
-		locals = LocalCapture.CAPTURE_FAILEXCEPTION
+		method = "generateFeatures"
 	)
 	private void generateFeatures(
 		StructureWorldAccess world, Chunk chunk, StructureAccessor structureAccessor, CallbackInfo info,
-		ChunkPos chunkPos,
-		ChunkSectionPos chunkSectionPos,
-		BlockPos blockPos,
-		Registry<Structure> registry,
-		Map<Integer, List<Structure>> map,
-		List<PlacedFeatureIndexer.IndexedFeatures> list,
-		ChunkRandom chunkRandom,
-		long l,
-		Set<Biome> set,
-		int i,
-		Registry<PlacedFeature> registry2,
-		int j,
-		int step,
-		int m,
-		IntSet intSet,
-		int n,
-		int[] is,
-		PlacedFeatureIndexer.IndexedFeatures indexedFeatures2,
-		int o,
-		int p,
-		PlacedFeature placedFeature,
-		Supplier<String> supplier2
+		@Local ChunkPos chunkPos,
+		@Local(ordinal = 1) Registry<PlacedFeature> placedFeatureRegistry,
+		@Local(ordinal = 2) int step,
+		@Local PlacedFeature placedFeature
 	) {
-		String featureKey = registry2.getKey(placedFeature).map(k -> k.getValue().toString()).orElse("unregistered");
+		String featureKey = placedFeatureRegistry.getKey(placedFeature).map(k -> k.getValue().toString()).orElse("unregistered");
 		featureGenerationEvent = new FeatureGenerationEvent(chunkPos, world.toServerWorld().getRegistryKey(), featureKey, step);
 		featureGenerationEvent.begin();
 	}
 
 	@Inject(
 		at = @At(
-			value = "INVOKE_ASSIGN",
-			target = "Lnet/minecraft/world/gen/feature/PlacedFeature;generate(Lnet/minecraft/world/StructureWorldAccess;Lnet/minecraft/world/gen/chunk/ChunkGenerator;Lnet/minecraft/util/math/random/Random;Lnet/minecraft/util/math/BlockPos;)Z"
+			value = "INVOKE",
+			target = "Lnet/minecraft/world/gen/feature/PlacedFeature;generate(Lnet/minecraft/world/StructureWorldAccess;Lnet/minecraft/world/gen/chunk/ChunkGenerator;Lnet/minecraft/util/math/random/Random;Lnet/minecraft/util/math/BlockPos;)Z",
+			shift = At.Shift.AFTER
 		),
 		method = "generateFeatures"
 	)
-	private void generateFeaturesCommit(StructureWorldAccess world, Chunk chunk, StructureAccessor structureAccessor, CallbackInfo info) {
+	private void generateFeaturesCommit(CallbackInfo info) {
 		if (featureGenerationEvent != null) {
 			featureGenerationEvent.commit();
 		}
